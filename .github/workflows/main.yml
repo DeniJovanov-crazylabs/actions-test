@@ -1,0 +1,26 @@
+name: Branch Monitoring
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  branch_monitoring:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Filter old branches
+        run: |
+          OLD_BRANCHES=$(git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short) %(committerdate:relative)' | awk '{dateCmd="date -d \""$2"\" +\"%s\""; dateCmd | getline commitTime; close(dateCmd); now=systime(); if ((now - commitTime) > (30 * 24 * 60 * 60)) print $1}')
+          echo "$OLD_BRANCHES" >> $GITHUB_ENV
